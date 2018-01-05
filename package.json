@@ -1,0 +1,24 @@
+{
+  "name": "reason-simple-server",
+  "version": "1.0.0",
+  "keywords": [
+    "bucklescript",
+    "ocaml",
+    "reason",
+    "server"
+  ],
+  "author": "Jared Forsyth",
+  "license": "MIT",
+  "scripts": {
+    "build": "bsb -make-world -backend native",
+    "watch": "bsb -make-world -backend native -w",
+    "test": "npm run build && ./lib/bs/native/test.native",
+    "clean": "bsb -clean-world"
+  },
+  "devDependencies": {
+    "bs-platform": "bsansouci/bsb-native#2.1.1"
+  },
+  "dependencies": {
+    "reason-cli-tools": "~1.0.2"
+  }
+}
