@@ -19,7 +19,7 @@ let ext = path => {
 
 let unwrap = (message, opt) => switch opt { | Some(x) => x | None => failwith(message)};
 
-open BasicServer.Response;
+open Basic.Response;
 
 let sendFile = (path, full_path) => switch (ReasonCliTools.Files.readFile(full_path)) {
 | Some(text) => Ok(mime_for_name(ext(path)), text)
@@ -80,4 +80,4 @@ let handler = (base, method, path, headers) => {
   }
 };
 
-let run = (~poll=?, ~port, path) => BasicServer.listen(~poll=?poll, port, handler(path));
+let run = (~poll=?, ~port, path) => Basic.listen(~poll=?poll, ~port, handler(path));

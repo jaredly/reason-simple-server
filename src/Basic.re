@@ -67,7 +67,7 @@ let canRead = desc => {
   r != []
 };
 
-let listen = (~poll=?, port, handler) => {
+let listen = (~poll=?, ~port, handler) => {
   let sock = Unix.socket(Unix.PF_INET, Unix.SOCK_STREAM, 0);
   Unix.setsockopt(sock, Unix.SO_REUSEADDR, true);
   Unix.bind(sock, Unix.ADDR_INET(Unix.inet_addr_any, port));
