@@ -22,7 +22,7 @@ let unwrap = (message, opt) => switch opt { | Some(x) => x | None => failwith(me
 open Basic.Response;
 
 let sendFile = (path, full_path) => switch (ReasonCliTools.Files.readFile(full_path)) {
-| Some(text) => Ok(mime_for_name(ext(path)), text)
+| Some(text) => Ok(mime_for_name(ext(full_path)), text)
 | None => Bad(404, "File not found: " ++ path)
 };
 
