@@ -46,6 +46,7 @@ let parse_request = text => {
 module Response = {
   type response =
     | Ok(string, string) /* mime, text */
+    | Custom(Unix.file_descr => unit)
     | Bad(int, string); /* code, text */
 };
 open Response;
@@ -58,6 +59,7 @@ let format_response = response => {
   | Bad(code, body) => {
     ("HTTP/1.1 " ++ string_of_int(code) ++ " Error\nContent-type: text/plain", body)
   }
+  | Custom(_) => assert false /* booo */
   };
   top ++ "\nServer: Ocaml-Cross-Mobile\nContent-length: " ++ string_of_int(String.length(body)) ++ "\n\n" ++ body
 };
@@ -85,13 +87,17 @@ let listen = (~poll=?, ~port, handler) => {
         | _ => Bad(500, "Server error")
       };
 
-      let response = format_response(response);
-      let total = String.length(response);
-      let left = ref(String.length(response));
-      while (left^ > 0) {
-        left := left^ - Unix.send(client, response, total - left^, left^, []);
-      };
-      Unix.shutdown(client, Unix.SHUTDOWN_ALL);
+      switch response {
+      | Custom(cb) => cb(client)
+      | _ =>
+        let response = format_response(response);
+        let total = String.length(response);
+        let left = ref(String.length(response));
+        while (left^ > 0) {
+          left := left^ - Unix.send(client, response, total - left^, left^, []);
+        };
+        Unix.shutdown(client, Unix.SHUTDOWN_ALL);
+      }
     }
   };
 
