@@ -51,22 +51,24 @@ module Response = {
 };
 open Response;
 
-let format_response = response => {
-  let (top, body) = switch (response) {
-  | Ok(mime, body) => {
-    ("HTTP/1.1 200 Ok\nContent-type: " ++ mime, body)
-  }
-  | Bad(code, body) => {
-    ("HTTP/1.1 " ++ string_of_int(code) ++ " Error\nContent-type: text/plain", body)
-  }
-  | Custom(_) => assert false /* booo */
-  };
+let formatResponse = (top, body) => {
   top ++ "\nServer: Ocaml-Cross-Mobile\nContent-length: " ++ string_of_int(String.length(body)) ++ "\n\n" ++ body
 };
+
+let okTop = mime => "HTTP/1.1 200 Ok\nContent-type: " ++ mime;
+let badTop = code => "HTTP/1.1 " ++ string_of_int(code) ++ " Error\nContent-type: text/plain";
 
 let canRead = desc => {
   let (r, w, e) = Unix.select([desc], [], [], 0.1);
   r != []
+};
+
+let sendToSocket = (client, text) => {
+  let total = String.length(text);
+  let left = ref(String.length(text));
+  while (left^ > 0) {
+    left := left^ - Unix.send(client, text, total - left^, left^, []);
+  };
 };
 
 let listen = (~poll=?, ~port, handler) => {
@@ -88,14 +90,14 @@ let listen = (~poll=?, ~port, handler) => {
       };
 
       switch response {
-      | Custom(cb) => cb(client)
-      | _ =>
-        let response = format_response(response);
-        let total = String.length(response);
-        let left = ref(String.length(response));
-        while (left^ > 0) {
-          left := left^ - Unix.send(client, response, total - left^, left^, []);
-        };
+      | Custom(cb) => {cb(client); None}
+      | Ok(mime, body) => Some((okTop(mime), body))
+      | Bad(code, body) => Some((badTop(code), body))
+      } |> fun
+      | None => ()
+      | Some((top, body)) => {
+        let fullText = formatResponse(top, body);
+        sendToSocket(client, fullText);
         Unix.shutdown(client, Unix.SHUTDOWN_ALL);
       }
     }
