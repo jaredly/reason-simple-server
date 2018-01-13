@@ -51,17 +51,9 @@ let directoryListing = path => {
   ++ "</li></ul>"
 };
 
-let serveStatic = (~extraHandler=?, full_path, path) => {
+let serveStatic = (~extraHandler=?, full_path, path, headers) => {
   switch (Unix.stat(full_path)) {
-  | exception Unix.Unix_error(Unix.ENOENT, _, _) =>
-      let res = switch (extraHandler) {
-      | None => None
-      | Some(handler) => handler(path)
-      };
-      switch res {
-      | None => Bad(404, "File not found: " ++ path)
-      | Some(thing) => thing
-      }
+  | exception Unix.Unix_error(Unix.ENOENT, _, _) => Bad(404, "File not found: " ++ path)
   | stat =>
   switch (stat.Unix.st_kind) {
   | Unix.S_REG => sendFile(path, full_path)
@@ -79,12 +71,20 @@ let serveStatic = (~extraHandler=?, full_path, path) => {
 };
 
 let handler = (~extraHandler, base, method, path, headers) => {
+  let res = switch (extraHandler) {
+  | None => None
+  | Some(handler) => handler(method, path, headers)
+  };
+  switch res {
+  | Some(thing) => thing
+  | None =>
   switch (method) {
   | "GET" => {
     let full_path = Filename.concat(base, "." ++ path);
-    serveStatic(~extraHandler=?, full_path, path)
+    serveStatic(~extraHandler=?, full_path, path, headers)
   }
   | _ => Bad(401, "Method not allowed: " ++ method)
+  }
   }
 };
 
