@@ -98,7 +98,11 @@ let listen = (~poll=?, ~port, handler) => {
       | Some((top, body)) => {
         let fullText = formatResponse(top, body);
         sendToSocket(client, fullText);
-        Unix.shutdown(client, Unix.SHUTDOWN_ALL);
+        try {
+          Unix.shutdown(client, Unix.SHUTDOWN_ALL);
+        } {
+          | _ => ()
+        }
       }
     }
   };
